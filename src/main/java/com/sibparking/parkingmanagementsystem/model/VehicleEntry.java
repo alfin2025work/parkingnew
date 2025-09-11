@@ -3,6 +3,7 @@ package com.sibparking.parkingmanagementsystem.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Document(collection = "vehicleentry") // MongoDB collection name
 public class VehicleEntry {
@@ -14,10 +15,13 @@ public class VehicleEntry {
     private String ownerName;
     private String mobileNumber;
     private String vehicletype;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date   entryDate;
     private String entryTime;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date   exitDate;
     private String exitTime;
+    // Constructors, Getters, and Seters
 
     public VehicleEntry() {
         // Default constructor
@@ -74,7 +78,7 @@ public class VehicleEntry {
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
     }
-    public Date getEntrydate() {
+    public Date getEntryDate() {
         return entryDate;
     }
     public void setEntrydate(Date entryDate) {
@@ -88,7 +92,7 @@ public class VehicleEntry {
         this.entryTime = entryTime;
     }
     
-    public Date getExitdate() {
+    public Date getExitDate() {
         return exitDate;
     }
     public void setExitdate(Date exitDate) {
