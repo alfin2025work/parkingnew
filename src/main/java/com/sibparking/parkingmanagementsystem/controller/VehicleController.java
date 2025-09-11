@@ -24,10 +24,7 @@ public class VehicleController {
     private VehicleEntryService vehicleService;
 
     // Test API - Check if API is running
-    @GetMapping("/test")
-    public String testConnection() {
-        return "API is working successfully!";
-    }
+    
 
 
     //  Get all vehicles (entire collection)
