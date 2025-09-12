@@ -29,20 +29,13 @@ public class VehicleController {
         return "API is working successfully!";
     }
 
-
-    //  Get all vehicles (entire collection)
-    @GetMapping("/all")
-    public ResponseEntity<List<VehicleEntry>>getAllVehicles() {
-        ResponseEntity responseEntity = new ResponseEntity(vehicleService.getAllVehicles(), null, 200);
-        return responseEntity;
-    }
-    // correct- Add Vehicle (POST)
+    //Adding new Vehicle (POST)
     @PostMapping("/add")
 public ResponseEntity<VehicleEntry> addVehicle(@RequestBody VehicleEntry vehicleEntry) {
     VehicleEntry savedVehicle = vehicleService.addVehicle(vehicleEntry);
     return ResponseEntity.status(HttpStatus.CREATED).body(savedVehicle);
 }
-    
+    //slot availability check-when typing slot
 @GetMapping("/slot/current/check/{slotId}")
 public ResponseEntity<?> checkCurrentSlotAvailability(@PathVariable String slotId) {
     boolean available = vehicleService.isSlotCurrentlyAvailable(slotId);
@@ -54,8 +47,6 @@ public ResponseEntity<?> checkCurrentSlotAvailability(@PathVariable String slotI
     );
 }
 
-
-    // Filter vehicles by date range and optional time
     // Filter vehicles by date range and optional entry/exit time range
     @GetMapping("/filter")
     public ResponseEntity<List<VehicleEntry>> getVehiclesByDateAndTime(
@@ -76,13 +67,13 @@ public ResponseEntity<?> checkCurrentSlotAvailability(@PathVariable String slotI
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
-    // Search only mobile numbers by prefix
+    // Auto fill when mobile numbers prefix entered
 @GetMapping("/searchByMobile")
 public ResponseEntity<List<String>> searchByMobile(@RequestParam String prefix) {
     List<String> results = vehicleService.searchMobileNumbersByPrefix(prefix);
     return ResponseEntity.ok(results);
 }
-//  Get a specific vehicle by mobile number (returns reduced data)
+//  Get a specific vehicle by mobile number
 @GetMapping("/{mobileNumber}")
 public ResponseEntity<?> getVehicleByMobile(@PathVariable String mobileNumber) {
     VehicleEntryDto vehicle = vehicleService.getVehicleDTOByMobile(mobileNumber);
@@ -92,7 +83,7 @@ public ResponseEntity<?> getVehicleByMobile(@PathVariable String mobileNumber) {
     }
     return ResponseEntity.ok(vehicle);
 }
-// new-Get currently available slots
+// showing currently available slots above dashboard
 @GetMapping("/slots/current/available")
 public ResponseEntity<?> getCurrentAvailableSlots() {
     long available = vehicleService.getCurrentlyAvailableSlots();

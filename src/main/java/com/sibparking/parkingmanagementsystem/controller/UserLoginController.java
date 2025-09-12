@@ -16,7 +16,7 @@ public class UserLoginController {
     @Autowired
     private UserLoginService userService;
 
-    
+
     // Login existing user
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLogin user) {
@@ -28,7 +28,7 @@ public class UserLoginController {
             response.put("status", "success");
             return ResponseEntity.ok(response);
         } else {
-            response.put("status", "error");
+            response.put("status", "Invalid username or password");
             return ResponseEntity.status(401).body(response);
         }
     }

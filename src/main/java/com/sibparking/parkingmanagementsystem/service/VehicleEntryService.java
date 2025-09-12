@@ -23,10 +23,6 @@ public class VehicleEntryService {
     return vehicleRepository.save(vehicleEntry);
 }
 
-    // Get all vehicle entries
-    public List<VehicleEntry> getAllVehicles() {
-        return vehicleRepository.findAll();
-    }
     //Get vehicle details by mobile number
     public VehicleEntry getVehicleByMobile(String mobileNumber) {
         return vehicleRepository.findByMobileNumber(mobileNumber);
@@ -35,14 +31,6 @@ public class VehicleEntryService {
 public boolean isSlotAvailable(String slotId) {
     // Slot is available if no vehicle is currently occupying it (exitTime == null)
     return !vehicleRepository.existsBySlotIdAndExitTimeIsNull(slotId);
-}
-
-
-// Count remaining slots
-    public long getRemainingSlots(int totalSlots) {
-    Date now = new Date();
-    long occupied = vehicleRepository.countByEntryDateBeforeAndExitDateAfter(now, now);
-    return totalSlots - occupied;
 }
 // New method to get vehicles by date range and optional time
     public List<VehicleEntry> getVehiclesByDateAndTime(Date startDate, Date endDate, String startTime, String endTime) {
@@ -126,6 +114,8 @@ public boolean isSlotCurrentlyAvailable(String slotId) {
     }
     return true; // no active booking found
 }
+
+// showing currently available slots above dashboard
 public long getCurrentlyAvailableSlots() {
     long occupied = 0;
     Date now = new Date();
@@ -161,8 +151,5 @@ public long getCurrentlyAvailableSlots() {
 
     return TOTAL_SLOTS - occupied;
 }
-
-
-
 }
 
