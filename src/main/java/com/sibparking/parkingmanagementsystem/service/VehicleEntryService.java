@@ -22,7 +22,7 @@ public class VehicleEntryService {
 
     // Save a vehicle entry
     public VehicleEntry addVehicle(VehicleEntry vehicleEntry) {
-        
+    vehicleEntry.setStatus("ENTERED");    
     return vehicleRepository.save(vehicleEntry);
 }
 

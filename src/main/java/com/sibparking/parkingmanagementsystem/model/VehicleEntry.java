@@ -4,6 +4,10 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+
+
 
 @Document(collection = "newvehicleentry") // MongoDB collection name
 public class VehicleEntry {
@@ -22,13 +26,14 @@ public class VehicleEntry {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date   exitDate;
     private String exitTime;
+    private String status; // e.g., "ENTERED", "EXITED"
     // Constructors, Getters, and Seters
 
     public VehicleEntry() {
         // Default constructor
     }
 
-    public VehicleEntry(String slotId, String vehicleNumber, String ownerName, String mobileNumber, String vehicletype, String purpose, Date entryDate, String entryTime, Date exitDate, String exitTime) {
+    public VehicleEntry(String slotId, String vehicleNumber, String ownerName, String mobileNumber, String vehicletype, String purpose, Date entryDate, String entryTime, Date exitDate, String exitTime,String status) {
         this.slotId = slotId;
         this.vehicleNumber = vehicleNumber;
         this.ownerName = ownerName;
@@ -39,6 +44,7 @@ public class VehicleEntry {
         this.entryTime = entryTime;
         this.exitDate = exitDate;
         this.exitTime = exitTime;
+        this.status = status;
     }
 
     public String getId() {
@@ -112,5 +118,12 @@ public class VehicleEntry {
 
     public void setExitTime(String exitTime) {
         this.exitTime = exitTime;
+    }
+    public String getStatus() {
+        return status;
+    }
+    @JsonIgnore
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
