@@ -15,6 +15,7 @@ public class VehicleEntry {
     private String ownerName;
     private String mobileNumber;
     private String vehicletype;
+    private String purpose;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date   entryDate;
     private String entryTime;
@@ -27,12 +28,13 @@ public class VehicleEntry {
         // Default constructor
     }
 
-    public VehicleEntry(String slotId, String vehicleNumber, String ownerName, String mobileNumber, String vehicletype, Date entryDate, String entryTime, Date exitDate, String exitTime) {
+    public VehicleEntry(String slotId, String vehicleNumber, String ownerName, String mobileNumber, String vehicletype, String purpose, Date entryDate, String entryTime, Date exitDate, String exitTime) {
         this.slotId = slotId;
         this.vehicleNumber = vehicleNumber;
         this.ownerName = ownerName;
         this.mobileNumber = mobileNumber;
         this.vehicletype = vehicletype;
+        this.purpose = purpose;
         this.entryDate = entryDate;
         this.entryTime = entryTime;
         this.exitDate = exitDate;
@@ -63,6 +65,12 @@ public class VehicleEntry {
     }
     public void setVehicletype(String vehicletype) {
         this.vehicletype = vehicletype;
+    }
+    public String getPurpose() {
+        return purpose;
+    }
+    public void setPurpose(String purpose) {
+        this.purpose = purpose;
     }
     public String getMobileNumber() {
         return mobileNumber;

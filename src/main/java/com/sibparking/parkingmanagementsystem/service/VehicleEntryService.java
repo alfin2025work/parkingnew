@@ -70,7 +70,8 @@ public VehicleEntryDto getVehicleDTOByMobile(String mobileNumber) {
         vehicle.getVehicleNumber(),
         vehicle.getOwnerName(),
         vehicle.getMobileNumber(),
-        vehicle.getVehicletype()
+        vehicle.getVehicletype(),
+        vehicle.getPurpose()
     );
 }
 //availability check date+time
