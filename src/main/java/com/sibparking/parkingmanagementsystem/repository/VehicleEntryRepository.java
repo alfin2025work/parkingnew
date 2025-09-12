@@ -15,4 +15,5 @@ public interface VehicleEntryRepository extends MongoRepository<VehicleEntry, St
     long countByEntryDateBeforeAndExitDateAfter(Date now1, Date now2);
     List<VehicleEntry> findByMobileNumberStartingWith(String prefix);
     List<VehicleEntry> findBySlotId(String slotId);
+    VehicleEntry findByVehicleNumber(String vehicleNumber);
 }

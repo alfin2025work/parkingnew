@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-@Document(collection = "vehicleentry") // MongoDB collection name
+@Document(collection = "newvehicleentry") // MongoDB collection name
 public class VehicleEntry {
 
     @Id

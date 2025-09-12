@@ -94,7 +94,26 @@ public ResponseEntity<?> getCurrentAvailableSlots() {
     
     return ResponseEntity.ok(response);
 }
+
+// New API - availability by vehicle type
+@GetMapping("/slots/current/availableByType")
+public ResponseEntity<?> getAvailableSlotsByType() {
+    Map<String, Long> response = vehicleService.getAvailableSlotsByType();
+    return ResponseEntity.ok(response);
+}
+//geting details by entering vehicle number
+@GetMapping("/{vehicleNumber}")
+public ResponseEntity<?> getVehicleByvehicle(@PathVariable String vehicleNumber) {
+    VehicleEntry vehicle = vehicleService.getVehicleByVehicleNumber(vehicleNumber);
+    if (vehicle == null) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("No vehicle found for vehicleNumber: " + vehicleNumber);
+    }
+    return ResponseEntity.ok(vehicle);
+
+
+}
 }
 
-    
+
 

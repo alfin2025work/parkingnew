@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class VehicleEntryService {
@@ -20,6 +22,7 @@ public class VehicleEntryService {
 
     // Save a vehicle entry
     public VehicleEntry addVehicle(VehicleEntry vehicleEntry) {
+        
     return vehicleRepository.save(vehicleEntry);
 }
 
@@ -27,6 +30,14 @@ public class VehicleEntryService {
     public VehicleEntry getVehicleByMobile(String mobileNumber) {
         return vehicleRepository.findByMobileNumber(mobileNumber);
     }
+
+
+    //Get vehicle details by vehicleNumber
+    public VehicleEntry getVehicleByVehicleNumber(String vehicleNumber) {
+        return vehicleRepository.findByVehicleNumber(vehicleNumber);
+    }
+
+
 // Check if a slot is available
 public boolean isSlotAvailable(String slotId) {
     // Slot is available if no vehicle is currently occupying it (exitTime == null)
@@ -152,5 +163,75 @@ public long getCurrentlyAvailableSlots() {
 
     return TOTAL_SLOTS - occupied;
 }
+
+
+
+
+//new-slots available per type of vehicle
+public Map<String, Long> getAvailableSlotsByType() {
+    // Define slot ranges
+    Map<String, Integer> totalSlotsByType = new HashMap<>();
+    totalSlotsByType.put("Car", 20);      // C1-C20
+    totalSlotsByType.put("Bike", 30);     // B21-B50
+    totalSlotsByType.put("Scooter", 30);  // S51-S80
+    totalSlotsByType.put("Van", 20);      // V81-V100
+    totalSlotsByType.put("Other", 20);    // O101-O110 (optional)
+
+    // Count occupied slots
+    Map<String, Long> occupied = new HashMap<>();
+    Date now = new Date();
+    SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd");
+    SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm");
+
+    String nowDateStr = sdfDate.format(now);
+    String nowTimeStr = sdfTime.format(now);
+
+    for (VehicleEntry entry : vehicleRepository.findAll()) {
+        if (entry.getEntryDate() == null || entry.getExitDate() == null) continue;
+
+        String entryDateStr = sdfDate.format(entry.getEntryDate());
+        String exitDateStr = sdfDate.format(entry.getExitDate());
+
+        String entryTime = entry.getEntryTime();
+        String exitTime = entry.getExitTime();
+
+        boolean dateInRange = (nowDateStr.compareTo(entryDateStr) >= 0 &&
+                               nowDateStr.compareTo(exitDateStr) <= 0);
+
+        boolean timeInRange = true;
+        if (nowDateStr.equals(entryDateStr) && nowDateStr.equals(exitDateStr)) {
+            timeInRange = (nowTimeStr.compareTo(entryTime) >= 0 &&
+                           nowTimeStr.compareTo(exitTime) <= 0);
+        }
+
+        if (dateInRange && timeInRange) {
+            String slotId = entry.getSlotId();
+            if (slotId != null) {
+                String type = getTypeFromSlot(slotId);
+                occupied.put(type, occupied.getOrDefault(type, 0L) + 1);
+            }
+        }
+    }
+
+    // Calculate available
+    Map<String, Long> available = new HashMap<>();
+    for (Map.Entry<String, Integer> typeEntry : totalSlotsByType.entrySet()) {
+        String type = typeEntry.getKey();
+        int total = typeEntry.getValue();
+        long used = occupied.getOrDefault(type, 0L);
+        available.put(type, (long) total - used);
+    }
+
+    return available;
 }
 
+// Helper to detect type from slotId prefix
+private String getTypeFromSlot(String slotId) {
+    if (slotId.startsWith("C")) return "Car";
+    if (slotId.startsWith("B")) return "Bike";
+    if (slotId.startsWith("S")) return "Scooter";
+    if (slotId.startsWith("V")) return "Van";
+    if (slotId.startsWith("O")) return "Other";
+    return "Unknown";
+}
+}
