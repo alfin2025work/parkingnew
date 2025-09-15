@@ -8,13 +8,10 @@ import java.util.Date;
 import java.util.List;
 @Repository
 public interface VehicleEntryRepository extends MongoRepository<VehicleEntry, String> {
-    VehicleEntry findByMobileNumber(String mobileNumber);
-    boolean existsBySlotIdAndExitTimeIsNull(String slotId);
-    long countByExitTimeIsNull();
     List<VehicleEntry> findByEntryDateBetween(Date startDate, Date endDate);
     long countByEntryDateBeforeAndExitDateAfter(Date now1, Date now2);
-    List<VehicleEntry> findByMobileNumberStartingWith(String prefix);
     List<VehicleEntry> findBySlotId(String slotId);
     VehicleEntry findByVehicleNumber(String vehicleNumber);
+    List<VehicleEntry> findByActiveTrue();
 
 }

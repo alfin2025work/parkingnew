@@ -26,14 +26,14 @@ public class VehicleEntry {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date   exitDate;
     private String exitTime;
-    private String status; // e.g., "ENTERED", "EXITED"
+    private boolean active;
     // Constructors, Getters, and Seters
 
     public VehicleEntry() {
         // Default constructor
     }
 
-    public VehicleEntry(String slotId, String vehicleNumber, String ownerName, String mobileNumber, String vehicletype, String purpose, Date entryDate, String entryTime, Date exitDate, String exitTime,String status) {
+    public VehicleEntry(String slotId, String vehicleNumber, String ownerName, String mobileNumber, String vehicletype, String purpose, Date entryDate, String entryTime) {
         this.slotId = slotId;
         this.vehicleNumber = vehicleNumber;
         this.ownerName = ownerName;
@@ -42,9 +42,9 @@ public class VehicleEntry {
         this.purpose = purpose;
         this.entryDate = entryDate;
         this.entryTime = entryTime;
-        this.exitDate = exitDate;
-        this.exitTime = exitTime;
-        this.status = status;
+        this.exitDate = null;
+        this.exitTime = null;
+        this.active=true;
     }
 
     public String getId() {
@@ -95,7 +95,7 @@ public class VehicleEntry {
     public Date getEntryDate() {
         return entryDate;
     }
-    public void setEntrydate(Date entryDate) {
+    public void setEntryDate(Date entryDate) {
         this.entryDate = entryDate;
     }
     public String getEntryTime() {
@@ -109,7 +109,7 @@ public class VehicleEntry {
     public Date getExitDate() {
         return exitDate;
     }
-    public void setExitdate(Date exitDate) {
+    public void setExitDate(Date exitDate) {
         this.exitDate = exitDate;
     }
     public String getExitTime() {
@@ -119,11 +119,10 @@ public class VehicleEntry {
     public void setExitTime(String exitTime) {
         this.exitTime = exitTime;
     }
-    public String getStatus() {
-        return status;
+    public boolean isActive() {
+        return active;
     }
-    @JsonIgnore
-    public void setStatus(String status) {
-        this.status = status;
+    public void setActive(boolean active) {
+        this.active =active;
     }
 }

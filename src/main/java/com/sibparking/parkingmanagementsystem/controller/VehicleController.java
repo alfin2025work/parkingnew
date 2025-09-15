@@ -36,64 +36,61 @@ public ResponseEntity<VehicleEntry> addVehicle(@RequestBody VehicleEntry vehicle
     return ResponseEntity.status(HttpStatus.CREATED).body(savedVehicle);
 }
 
-    //slot availability check-when typing slot
-@GetMapping("/slot/current/check/{slotId}")
-public ResponseEntity<?> checkCurrentSlotAvailability(@PathVariable String slotId) {
-    boolean available = vehicleService.isSlotCurrentlyAvailable(slotId);
+//adding-new
 
-    return ResponseEntity.ok(
-        new java.util.HashMap<String, Object>() {{
-            put("available", available);
-        }}
-    );
-}
+@GetMapping("/check/{vehicleNumber}")
+public ResponseEntity<?> checkVehicle(
+        @PathVariable String vehicleNumber,
+        @RequestParam(required = false) String vehicleType) {
 
-    // Filter vehicles by date range and optional entry/exit time range
-    @GetMapping("/filter")
-    public ResponseEntity<List<VehicleEntry>> getVehiclesByDateAndTime(
-            @RequestParam String startDate,
-            @RequestParam String endDate,
-            @RequestParam(required = false) String startTime,
-            @RequestParam(required = false) String endTime) {
+    VehicleEntry vehicle = vehicleService.getVehicleByVehicleNumber(vehicleNumber);
 
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date start = sdf.parse(startDate);
-            Date end = sdf.parse(endDate);
+    if (vehicle != null && vehicle.isActive()) {
+        // Already parked → return all details, including same slot
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Vehicle is already parked.");
+        response.put("vehicleNumber", vehicle.getVehicleNumber());
+        response.put("slotId", vehicle.getSlotId());
+        response.put("ownerName", vehicle.getOwnerName());
+        response.put("mobileNumber", vehicle.getMobileNumber());
+        response.put("vehicletype", vehicle.getVehicletype());
+        response.put("purpose", vehicle.getPurpose());
+        response.put("active", vehicle.isActive());
+        return ResponseEntity.ok(response);
 
-            List<VehicleEntry> vehicles = vehicleService.getVehiclesByDateAndTime(start, end, startTime, endTime);
-            return ResponseEntity.ok(vehicles);
+    } else {
+        // Vehicle exited before OR new vehicle → allocate first available slot
+        String typeToUse;
 
-        } catch (ParseException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        if (vehicle != null) {
+            typeToUse = vehicle.getVehicletype(); // get type from existing record
+        } else if (vehicleType != null && !vehicleType.isEmpty()) {
+            typeToUse = vehicleType; // new vehicle → frontend must send vehicleType as request param
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Vehicle type is required to allocate a slot for new entry.");
         }
+
+        // Use the same logic as your allocate API
+        String allocatedSlot = vehicleService.allocateSlotForType(typeToUse);
+        if (allocatedSlot == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No available slots for " + typeToUse);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Vehicle can be added as new entry.");
+        response.put("vehicleNumber", vehicleNumber);
+        response.put("vehicletype", typeToUse);
+        response.put("slotId", allocatedSlot);
+        if (vehicle != null) {
+            // include previously saved info for autofill if vehicle existed
+            response.put("ownerName", vehicle.getOwnerName());
+            response.put("mobileNumber", vehicle.getMobileNumber());
+            response.put("purpose", vehicle.getPurpose());
+        }
+        return ResponseEntity.ok(response);
     }
-    // Auto fill when mobile numbers prefix entered
-@GetMapping("/searchByMobile")
-public ResponseEntity<List<String>> searchByMobile(@RequestParam String prefix) {
-    List<String> results = vehicleService.searchMobileNumbersByPrefix(prefix);
-    return ResponseEntity.ok(results);
-}
-//  Get a specific vehicle by mobile number
-@GetMapping("/{mobileNumber}")
-public ResponseEntity<?> getVehicleByMobile(@PathVariable String mobileNumber) {
-    VehicleEntryDto vehicle = vehicleService.getVehicleDTOByMobile(mobileNumber);
-    if (vehicle == null) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("No vehicle found for mobile number: " + mobileNumber);
-    }
-    return ResponseEntity.ok(vehicle);
-}
-// showing currently available slots above dashboard
-@GetMapping("/slots/current/available")
-public ResponseEntity<?> getCurrentAvailableSlots() {
-    long available = vehicleService.getCurrentlyAvailableSlots();
-    
-    // Use a Map to return JSON
-    Map<String, Long> response = new HashMap<>();
-    response.put("available", available);
-    
-    return ResponseEntity.ok(response);
 }
 
 // New API - availability by vehicle type
@@ -124,6 +121,8 @@ public ResponseEntity<?> allocateSlot(@PathVariable String vehicleType) {
     response.put("slotId", slotId);
     return ResponseEntity.ok(response);
 }
+
+
 // new 15/09/25 Mark vehicle exit and update exit details
 @PutMapping("/exit/{vehicleNumber}")
 public ResponseEntity<?> markVehicleExit(@PathVariable String vehicleNumber) {
@@ -134,15 +133,19 @@ public ResponseEntity<?> markVehicleExit(@PathVariable String vehicleNumber) {
                     .body("No vehicle found with number: " + vehicleNumber);
         }
 
-        // Get current date & time
+        // Set exit date & time as current
         Date now = new Date();
-        SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm");
 
-        vehicle.setExitdate(sdfDate.parse(sdfDate.format(now))); // current date
-        vehicle.setExitTime(sdfTime.format(now));                // current time
-        vehicle.setStatus("EXITED");
+        // Formatters
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a");
 
+        // Update fields
+        vehicle.setExitDate(now); // full Date object for DB
+        vehicle.setExitTime(timeFormat.format(now)); // store formatted string
+        vehicle.setActive(false); // mark as exited
+
+        // Save update
         VehicleEntry updated = vehicleService.updateVehicle(vehicle);
 
         return ResponseEntity.ok(updated);
@@ -152,6 +155,36 @@ public ResponseEntity<?> markVehicleExit(@PathVariable String vehicleNumber) {
                 .body("Error updating exit details: " + e.getMessage());
     }
 }
+
+
+
+// Filter vehicles by date range and optional entry/exit time range
+    @GetMapping("/filter")
+    public ResponseEntity<List<VehicleEntry>> getVehiclesByDateAndTime(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime) {
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date start = sdf.parse(startDate);
+            Date end = sdf.parse(endDate);
+
+            List<VehicleEntry> vehicles = vehicleService.getVehiclesByDateAndTime(start, end, startTime, endTime);
+            return ResponseEntity.ok(vehicles);
+
+        } catch (ParseException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+@GetMapping("/vehicles/active")
+public ResponseEntity<?> getActiveVehicles() {
+    List<VehicleEntry> activeVehicles = vehicleService.getActiveVehicles();
+    return ResponseEntity.ok(activeVehicles);
+}
+
+
 }
 
 
