@@ -16,4 +16,5 @@ public interface VehicleEntryRepository extends MongoRepository<VehicleEntry, St
     List<VehicleEntry> findByMobileNumberStartingWith(String prefix);
     List<VehicleEntry> findBySlotId(String slotId);
     VehicleEntry findByVehicleNumber(String vehicleNumber);
+
 }

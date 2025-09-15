@@ -21,17 +21,13 @@ public class VehicleEntryService {
 
 
     // Save a vehicle entry
-    public VehicleEntry addVehicle(VehicleEntry vehicleEntry) {
-    vehicleEntry.setStatus("ENTERED");    
+    // In VehicleEntryService
+public VehicleEntry addVehicle(VehicleEntry vehicleEntry) {
+    vehicleEntry.setStatus("ENTERED");  // status at entry
+    vehicleEntry.setExitdate(null);     // make sure null
+    vehicleEntry.setExitTime(null);
     return vehicleRepository.save(vehicleEntry);
 }
-
-    //Get vehicle details by mobile number
-    public VehicleEntry getVehicleByMobile(String mobileNumber) {
-        return vehicleRepository.findByMobileNumber(mobileNumber);
-    }
-
-
     //Get vehicle details by vehicleNumber
     public VehicleEntry getVehicleByVehicleNumber(String vehicleNumber) {
         return vehicleRepository.findByVehicleNumber(vehicleNumber);
@@ -233,5 +229,43 @@ private String getTypeFromSlot(String slotId) {
     if (slotId.startsWith("V")) return "Van";
     if (slotId.startsWith("O")) return "Other";
     return "Unknown";
+}
+// Allocate first available slot for a vehicle type
+public String allocateSlotForType(String vehicletype) {
+    int start = 0, end = 0;
+
+    switch (vehicletype.toLowerCase()) {
+        case "car":
+            start = 1; end = 20; break;   // C1–C20
+        case "bike":
+            start = 21; end = 50; break;  // B21–B50
+        case "scooter":
+            start = 51; end = 80; break;  // S51–S80
+        case "van":
+            start = 81; end = 100; break; // V81–V100
+        case "other":
+            start = 101; end = 110; break; // O101–O110
+        default:
+            return null;
+    }
+
+    for (int i = start; i <= end; i++) {
+        String slotId;
+        if (vehicletype.equalsIgnoreCase("car")) slotId = "C" + i;
+        else if (vehicletype.equalsIgnoreCase("bike")) slotId = "B" + i;
+        else if (vehicletype.equalsIgnoreCase("scooter")) slotId = "S" + i;
+        else if (vehicletype.equalsIgnoreCase("van")) slotId = "V" + i;
+        else slotId = "O" + i;
+
+        // ✅ Check if slot is free at current time
+        if (isSlotCurrentlyAvailable(slotId)) {
+            return slotId; // first available slot
+        }
+    }
+    return null; // no available slots
+}
+
+public VehicleEntry updateVehicle(VehicleEntry vehicle) {
+    return vehicleRepository.save(vehicle);
 }
 }

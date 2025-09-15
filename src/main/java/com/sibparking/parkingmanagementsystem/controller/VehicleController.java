@@ -35,6 +35,7 @@ public ResponseEntity<VehicleEntry> addVehicle(@RequestBody VehicleEntry vehicle
     VehicleEntry savedVehicle = vehicleService.addVehicle(vehicleEntry);
     return ResponseEntity.status(HttpStatus.CREATED).body(savedVehicle);
 }
+
     //slot availability check-when typing slot
 @GetMapping("/slot/current/check/{slotId}")
 public ResponseEntity<?> checkCurrentSlotAvailability(@PathVariable String slotId) {
@@ -110,8 +111,46 @@ public ResponseEntity<?> getVehicleByvehicle(@PathVariable String vehicleNumber)
                 .body("No vehicle found for vehicleNumber: " + vehicleNumber);
     }
     return ResponseEntity.ok(vehicle);
+}
+// Allocate slot based on vehicle type
+@GetMapping("/allocate/{vehicleType}")
+public ResponseEntity<?> allocateSlot(@PathVariable String vehicleType) {
+    String slotId = vehicleService.allocateSlotForType(vehicleType);
+    if (slotId == null) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("No available slots for " + vehicleType);
+    }
+    Map<String, String> response = new HashMap<>();
+    response.put("slotId", slotId);
+    return ResponseEntity.ok(response);
+}
+// new 15/09/25 Mark vehicle exit and update exit details
+@PutMapping("/exit/{vehicleNumber}")
+public ResponseEntity<?> markVehicleExit(@PathVariable String vehicleNumber) {
+    try {
+        VehicleEntry vehicle = vehicleService.getVehicleByVehicleNumber(vehicleNumber);
+        if (vehicle == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No vehicle found with number: " + vehicleNumber);
+        }
 
+        // Get current date & time
+        Date now = new Date();
+        SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm");
 
+        vehicle.setExitdate(sdfDate.parse(sdfDate.format(now))); // current date
+        vehicle.setExitTime(sdfTime.format(now));                // current time
+        vehicle.setStatus("EXITED");
+
+        VehicleEntry updated = vehicleService.updateVehicle(vehicle);
+
+        return ResponseEntity.ok(updated);
+
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Error updating exit details: " + e.getMessage());
+    }
 }
 }
 
