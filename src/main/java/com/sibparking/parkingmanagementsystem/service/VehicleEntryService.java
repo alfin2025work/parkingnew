@@ -1,11 +1,11 @@
 package com.sibparking.parkingmanagementsystem.service;
 
 import com.sibparking.parkingmanagementsystem.model.VehicleEntry;
-import com.sibparking.parkingmanagementsystem.dto.VehicleEntryDto;
+
 import com.sibparking.parkingmanagementsystem.repository.VehicleEntryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import java.util.Comparator;
 import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -17,13 +17,24 @@ public class VehicleEntryService {
 
     @Autowired
     private VehicleEntryRepository vehicleRepository;
-    private static final int TOTAL_SLOTS = 110;
 
 
-    //Get vehicle details by vehicleNumber
     public VehicleEntry getVehicleByVehicleNumber(String vehicleNumber) {
-        return vehicleRepository.findByVehicleNumber(vehicleNumber);
+    List<VehicleEntry> vehicles = vehicleRepository.findByVehicleNumber(vehicleNumber);
+
+    if (vehicles == null || vehicles.isEmpty()) {
+        return null; // no record at all
     }
+
+     // Prefer active
+    return vehicles.stream()
+            .filter(VehicleEntry::isActive)
+            .findFirst()
+            // else return the latest record (even if inactive)
+            .orElse(vehicles.stream()
+                    .max(Comparator.comparing(VehicleEntry::getEntryDate))
+                    .orElse(null));
+}
  
 //availability check date+time
 public boolean isSlotCurrentlyAvailable(String slotId) {
@@ -200,26 +211,38 @@ public VehicleEntry updateVehicle(VehicleEntry vehicle) {
             String entryTime = vehicle.getEntryTime();
             String exitTime = vehicle.getExitTime();
 
-            // If entryTime or exitTime is null, skip
-            if (entryTime == null || exitTime == null) return true;
+            // If only entryTime is available (vehicle still active), check entryTime only
+            if (entryTime != null && (exitTime == null || exitTime.isEmpty())) {
+                return entryTime.compareTo(startTime) < 0; // keep if within range
+            }
 
-            return (entryTime.compareTo(startTime) < 0 || exitTime.compareTo(endTime) > 0);
+            // If both entry and exit exist → full check
+            if (entryTime != null && exitTime != null) {
+                return (entryTime.compareTo(startTime) < 0 || exitTime.compareTo(endTime) > 0);
+            }
+
+            return false; // keep if no filtering possible
         });
     }
 
     return vehicles;
 }
-
 public VehicleEntry addVehicle(VehicleEntry vehicleEntry) {
-    // Check if vehicle exists
-    VehicleEntry existing = vehicleRepository.findByVehicleNumber(vehicleEntry.getVehicleNumber());
+    // Fetch all records for this vehicle number
+    List<VehicleEntry> existingList = vehicleRepository.findByVehicleNumber(vehicleEntry.getVehicleNumber());
 
-    if (existing != null && existing.isActive()) {
-        // Vehicle is already inside → just return existing (or throw error if needed)
-        return existing;
+    // Check if any active record exists
+    VehicleEntry activeRecord = existingList.stream()
+            .filter(VehicleEntry::isActive)
+            .findFirst()
+            .orElse(null);
+
+    if (activeRecord != null) {
+        // Vehicle is already inside → return existing (or throw error if you want to block duplicate entry)
+        return activeRecord;
     }
 
-    // New entry or previously exited → allocate slot
+    // New entry or previously exited → allocate new slot
     String allocatedSlot = allocateSlotForType(vehicleEntry.getVehicletype());
     vehicleEntry.setSlotId(allocatedSlot);
 
