@@ -1,6 +1,7 @@
 package com.sibparking.parkingmanagementsystem.controller;
 
 import com.sibparking.parkingmanagementsystem.model.VehicleEntry;
+import com.sibparking.parkingmanagementsystem.model.output.AllocateSlotResponseModel;
 import com.sibparking.parkingmanagementsystem.service.VehicleEntryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import com.sibparking.parkingmanagementsystem.dto.VehicleEntryDto;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,15 +41,15 @@ public ResponseEntity<VehicleEntry> addVehicle(@RequestBody VehicleEntry vehicle
 //adding-new
 
 @GetMapping("/check/{vehicleNumber}")
-public ResponseEntity<?> checkVehicle(
+public ResponseEntity<Map<String, Object>> checkVehicle(
         @PathVariable String vehicleNumber,
         @RequestParam(required = false) String vehicleType) {
 
+    Map<String, Object> response = new HashMap<>();
     VehicleEntry vehicle = vehicleService.getVehicleByVehicleNumber(vehicleNumber);
 
     if (vehicle != null && vehicle.isActive()) {
-        // Already parked → return all details, including same slot
-        Map<String, Object> response = new HashMap<>();
+        // Already parked → return all details
         response.put("message", "Vehicle is already parked.");
         response.put("vehicleNumber", vehicle.getVehicleNumber());
         response.put("slotId", vehicle.getSlotId());
@@ -63,28 +65,32 @@ public ResponseEntity<?> checkVehicle(
         String typeToUse;
 
         if (vehicle != null) {
-            typeToUse = vehicle.getVehicletype(); // get type from existing record
+            typeToUse = vehicle.getVehicletype(); // from DB
         } else if (vehicleType != null && !vehicleType.isEmpty()) {
-            typeToUse = vehicleType; // new vehicle → frontend must send vehicleType as request param
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Vehicle type is required to allocate a slot for new entry.");
-        }
+            typeToUse = vehicleType; // from request param
+        }else {
+    // Vehicle type missing → return empty {}
+    return ResponseEntity.ok(Collections.emptyMap());
+}
 
-        // Use the same logic as your allocate API
+
         String allocatedSlot = vehicleService.allocateSlotForType(typeToUse);
+
         if (allocatedSlot == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("No available slots for " + typeToUse);
+            response.put("message", "No available slots for " + typeToUse);
+            response.put("vehicleNumber", vehicleNumber);
+            response.put("vehicletype", typeToUse);
+            return ResponseEntity.ok(response); // ✅ still 200
         }
 
-        Map<String, Object> response = new HashMap<>();
+        // Success – vehicle can be added
         response.put("message", "Vehicle can be added as new entry.");
         response.put("vehicleNumber", vehicleNumber);
         response.put("vehicletype", typeToUse);
         response.put("slotId", allocatedSlot);
+
         if (vehicle != null) {
-            // include previously saved info for autofill if vehicle existed
+            // include previous data for autofill
             response.put("ownerName", vehicle.getOwnerName());
             response.put("mobileNumber", vehicle.getMobileNumber());
             response.put("purpose", vehicle.getPurpose());
@@ -99,26 +105,30 @@ public ResponseEntity<?> getAvailableSlotsByType() {
     Map<String, Long> response = vehicleService.getAvailableSlotsByType();
     return ResponseEntity.ok(response);
 }
-//geting details by entering vehicle number
 @GetMapping("/{vehicleNumber}")
 public ResponseEntity<?> getVehicleByvehicle(@PathVariable String vehicleNumber) {
     VehicleEntry vehicle = vehicleService.getVehicleByVehicleNumber(vehicleNumber);
-    if (vehicle == null) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("No vehicle found for vehicleNumber: " + vehicleNumber);
+
+    if (vehicle == null || !vehicle.isActive()) {
+        // return empty curly braces {} with 200 OK
+        return ResponseEntity.ok(Collections.emptyMap());
     }
+
     return ResponseEntity.ok(vehicle);
 }
 // Allocate slot based on vehicle type
 @GetMapping("/allocate/{vehicleType}")
-public ResponseEntity<?> allocateSlot(@PathVariable String vehicleType) {
+public ResponseEntity<AllocateSlotResponseModel> allocateSlot(@PathVariable String vehicleType) {
     String slotId = vehicleService.allocateSlotForType(vehicleType);
+    AllocateSlotResponseModel response = new AllocateSlotResponseModel();
     if (slotId == null) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("No available slots for " + vehicleType);
+        response.setStatus("error");
+        response.setMessage("No available slots for " + vehicleType);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
-    Map<String, String> response = new HashMap<>();
-    response.put("slotId", slotId);
+    response.setStatus("success");
+    response.setMessage("Slot allocated successfully");
+    response.setSlotId(slotId);
     return ResponseEntity.ok(response);
 }
 
@@ -181,10 +191,12 @@ public ResponseEntity<?> markVehicleExit(@PathVariable String vehicleNumber) {
 @GetMapping("/vehicles/active")
 public ResponseEntity<?> getActiveVehicles() {
     List<VehicleEntry> activeVehicles = vehicleService.getActiveVehicles();
+    if (activeVehicles.isEmpty()) {
+        // return {}
+        return ResponseEntity.ok(Collections.emptyMap());
+    }
     return ResponseEntity.ok(activeVehicles);
 }
-
-
 }
 
 

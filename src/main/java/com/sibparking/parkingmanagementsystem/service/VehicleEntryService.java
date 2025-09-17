@@ -89,10 +89,10 @@ public Map<String, Long> getAvailableSlotsByType() {
     // Define total slots by type
     Map<String, Integer> totalSlotsByType = new HashMap<>();
     totalSlotsByType.put("Car", 20);      // C1-C20
-    totalSlotsByType.put("Bike", 30);     // B21-B50
+    totalSlotsByType.put("Bike", 31);     // B21-B50
     totalSlotsByType.put("Scooter", 30);  // S51-S80
     totalSlotsByType.put("Van", 20);      // V81-V100
-    totalSlotsByType.put("Other", 10);    // O101-O110
+    totalSlotsByType.put("Other", 11);    // O101-O110
 
     // Track occupied slots
     Map<String, Long> occupied = new HashMap<>();

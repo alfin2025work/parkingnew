@@ -11,7 +11,7 @@ public interface VehicleEntryRepository extends MongoRepository<VehicleEntry, St
     List<VehicleEntry> findByEntryDateBetween(Date startDate, Date endDate);
     long countByEntryDateBeforeAndExitDateAfter(Date now1, Date now2);
     List<VehicleEntry> findBySlotId(String slotId);
-    VehicleEntry findByVehicleNumber(String vehicleNumber);
+    List<VehicleEntry> findByVehicleNumber(String vehicleNumber);
     List<VehicleEntry> findByActiveTrue();
 
 }
