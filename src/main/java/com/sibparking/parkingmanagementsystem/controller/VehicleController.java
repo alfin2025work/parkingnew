@@ -170,7 +170,7 @@ public ResponseEntity<?> markVehicleExit(@PathVariable String vehicleNumber) {
 
 // Filter vehicles by date range and optional entry/exit time range
     @GetMapping("/filter")
-    public ResponseEntity<List<VehicleEntry>> getVehiclesByDateAndTime(
+    public ResponseEntity<List<VehicleEntry>> getfindVehiclesWithinDateRange(
             @RequestParam String startDate,
             @RequestParam String endDate,
             @RequestParam(required = false) String startTime,
@@ -198,6 +198,7 @@ public ResponseEntity<?> getActiveVehicles() {
     return ResponseEntity.ok(activeVehicles);
 }
 }
+
 
 
 
