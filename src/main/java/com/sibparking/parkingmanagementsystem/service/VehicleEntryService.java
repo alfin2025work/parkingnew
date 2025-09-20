@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.text.ParseException;
 import java.util.Calendar;
+import org.springframework.data.domain.Sort;
+
 
 @Service
 public class VehicleEntryService {
@@ -90,11 +92,9 @@ public boolean isSlotCurrentlyAvailable(String slotId) {
 public Map<String, Long> getAvailableSlotsByType() {
     // Define total slots by type
     Map<String, Integer> totalSlotsByType = new HashMap<>();
-    totalSlotsByType.put("Car", 20);      // C1-C20
-    totalSlotsByType.put("Bike", 30);     // B21-B50
-    totalSlotsByType.put("Scooter", 30);  // S51-S80
-    totalSlotsByType.put("Van", 20);      // V81-V100
-    totalSlotsByType.put("Other", 10);    // O101-O110
+    totalSlotsByType.put("FourWheeler", 40);      // A1-A40
+    totalSlotsByType.put("TwoWheeler", 50);     // B41-B90
+    totalSlotsByType.put("Others", 10);  // C91-C100
 
     // Track occupied slots
     Map<String, Long> occupied = new HashMap<>();
@@ -155,11 +155,9 @@ public Map<String, Long> getAvailableSlotsByType() {
 
 // Helper to detect type from slotId prefix
 private String getTypeFromSlot(String slotId) {
-    if (slotId.startsWith("C")) return "Car";
-    if (slotId.startsWith("B")) return "Bike";
-    if (slotId.startsWith("S")) return "Scooter";
-    if (slotId.startsWith("V")) return "Van";
-    if (slotId.startsWith("O")) return "Other";
+    if (slotId.startsWith("A")) return "FourWheeler";
+    if (slotId.startsWith("B")) return "TwoWheeler";
+    if (slotId.startsWith("C")) return "Others";
     return "Unknown";
 }
 // Allocate first available slot for a vehicle type
@@ -167,27 +165,21 @@ public String allocateSlotForType(String vehicletype) {
     int start = 0, end = 0;
 
     switch (vehicletype.toLowerCase()) {
-        case "car":
-            start = 1; end = 20; break;   // C1–C20
-        case "bike":
-            start = 21; end = 50; break;  // B21–B50
-        case "scooter":
-            start = 51; end = 80; break;  // S51–S80
-        case "van":
-            start = 81; end = 100; break; // V81–V100
-        case "other":
-            start = 101; end = 110; break; // O101–O110
+        case "fourwheeler":
+            start = 1; end = 40; break;   // A1–A40
+        case "twowheeler":
+            start = 41; end = 90; break;  // B41–B90
+        case "others":
+            start = 91; end = 100; break;  // C91–C100
         default:
             return null;
     }
 
     for (int i = start; i <= end; i++) {
         String slotId;
-        if (vehicletype.equalsIgnoreCase("car")) slotId = "C" + i;
-        else if (vehicletype.equalsIgnoreCase("bike")) slotId = "B" + i;
-        else if (vehicletype.equalsIgnoreCase("scooter")) slotId = "S" + i;
-        else if (vehicletype.equalsIgnoreCase("van")) slotId = "V" + i;
-        else slotId = "O" + i;
+        if (vehicletype.equalsIgnoreCase("fourwheeler")) slotId = "A" + i;
+        else if (vehicletype.equalsIgnoreCase("twowheeler")) slotId = "B" + i;
+        else slotId = "C" + i;
 
         // ✅ Check if slot is free at current time
         if (isSlotCurrentlyAvailable(slotId)) {
@@ -203,43 +195,36 @@ public VehicleEntry updateVehicle(VehicleEntry vehicle) {
 
 // New method to get vehicles by date range and optional time
 
-    public List<VehicleEntry> getVehiclesByDateAndTime(Date startDate, Date endDate, String startTime, String endTime) {
-    List<VehicleEntry> allVehicles = vehicleRepository.findAll();
+    public List<VehicleEntry> getVehiclesByDateAndTime(Date startDate, Date endDate,
+                                                   String startTime, String endTime) {
+    // 1️⃣ Fetch by date range directly from DB (avoid pulling all records)
+    List<VehicleEntry> vehicles = vehicleRepository.findByEntryDateBetween(startDate, endDate);
 
-    // 1️⃣ Filter by overlapping date range
-    List<VehicleEntry> vehicles = allVehicles.stream()
-            .filter(v -> {
-                Date entry = v.getEntryDate();
-                Date exit = v.getExitDate() != null ? v.getExitDate() : new Date(); // if still active, treat as now
-
-                // overlap check: entry <= endDate AND exit >= startDate
-                return (entry != null && !entry.after(endDate)) &&
-                       (exit != null && !exit.before(startDate));
-            })
-            .toList();
-
-    // 2️⃣ Optional time filtering (if provided)
+    // 2️⃣ If time filters are provided, apply them
     if (startTime != null && endTime != null && !startTime.isEmpty() && !endTime.isEmpty()) {
         try {
-            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a"); // supports AM/PM
-            Date startT = timeFormat.parse(startTime);
-            Date endT = timeFormat.parse(endTime);
+            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a"); // handles "03:35 pm"
+            Date filterStart = timeFormat.parse(startTime);
+            Date filterEnd = timeFormat.parse(endTime);
 
             vehicles = vehicles.stream()
                     .filter(vehicle -> {
                         try {
+                            // Parse vehicle times
                             Date entryT = (vehicle.getEntryTime() != null)
-                                    ? timeFormat.parse(vehicle.getEntryTime()) : null;
+                                    ? timeFormat.parse(vehicle.getEntryTime())
+                                    : null;
                             Date exitT = (vehicle.getExitTime() != null)
-                                    ? timeFormat.parse(vehicle.getExitTime()) : null;
+                                    ? timeFormat.parse(vehicle.getExitTime())
+                                    : null;
 
                             if (entryT != null && exitT == null) {
-                                // Still active: keep if entered after startT
-                                return !entryT.before(startT);
+                                // Still active → valid if entered within the window
+                                return !entryT.before(filterStart) && !entryT.after(filterEnd);
                             }
                             if (entryT != null && exitT != null) {
-                                // Both entry & exit exist → must overlap the time window
-                                return !entryT.before(startT) && !exitT.after(endT);
+                                // Overlap check: (entry ≤ filterEnd && exit ≥ filterStart)
+                                return !entryT.after(filterEnd) && !exitT.before(filterStart);
                             }
                         } catch (ParseException e) {
                             return false; // skip invalid times
@@ -248,7 +233,7 @@ public VehicleEntry updateVehicle(VehicleEntry vehicle) {
                     })
                     .toList();
         } catch (ParseException e) {
-            // ignore invalid time formats → just return date-filtered vehicles
+            // Invalid time format → ignore time filtering
         }
     }
 
@@ -290,6 +275,15 @@ public VehicleEntry addVehicle(VehicleEntry vehicleEntry) {
     return vehicleRepository.save(vehicleEntry);
 }
 public List<VehicleEntry> getActiveVehicles() {
-    return vehicleRepository.findByActiveTrue();
+    return vehicleRepository.findByActiveTrue(Sort.by(Sort.Direction.DESC, "_id"));
+}
+//getting active vehicle numbers for marking exit
+public List<String> getActiveVehiclesNumbers() {
+    // Fetch active vehicles
+    List<VehicleEntry> activeVehicles = vehicleRepository.findByActiveTrue(Sort.by(Sort.Direction.DESC, "_id"));
+    // Map to vehicle numbers
+    return activeVehicles.stream()
+            .map(VehicleEntry::getVehicleNumber)
+            .toList();
 }
 }

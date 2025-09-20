@@ -20,10 +20,10 @@ public class VehicleEntry {
     private String mobileNumber;
     private String vehicletype;
     private String purpose;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     private Date   entryDate;
     private String entryTime;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     private Date   exitDate;
     private String exitTime;
     private boolean active;

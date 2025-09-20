@@ -13,6 +13,7 @@ import com.sibparking.parkingmanagementsystem.dto.VehicleEntryDto;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -170,24 +171,33 @@ public ResponseEntity<?> markVehicleExit(@PathVariable String vehicleNumber) {
 
 // Filter vehicles by date range and optional entry/exit time range
     @GetMapping("/filter")
-    public ResponseEntity<List<VehicleEntry>> getfindVehiclesWithinDateRange(
-            @RequestParam String startDate,
-            @RequestParam String endDate,
-            @RequestParam(required = false) String startTime,
-            @RequestParam(required = false) String endTime) {
+public ResponseEntity<List<VehicleEntry>> getVehiclesByDateAndTime(
+        @RequestParam String startDate,
+        @RequestParam String endDate,
+        @RequestParam(required = false) String startTime,
+        @RequestParam(required = false) String endTime) {
 
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date start = sdf.parse(startDate);
-            Date end = sdf.parse(endDate);
+    try {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date start = sdf.parse(startDate);
+        Date end = sdf.parse(endDate);
 
-            List<VehicleEntry> vehicles = vehicleService.getVehiclesByDateAndTime(start, end, startTime, endTime);
-            return ResponseEntity.ok(vehicles);
+        // 🔑 adjust end to include the whole day
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(end);
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
+        end = cal.getTime();
 
-        } catch (ParseException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        List<VehicleEntry> vehicles = vehicleService.getVehiclesByDateAndTime(start, end, startTime, endTime);
+        return ResponseEntity.ok(vehicles);
+
+    } catch (ParseException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
     }
+}
 @GetMapping("/vehicles/active")
 public ResponseEntity<?> getActiveVehicles() {
     List<VehicleEntry> activeVehicles = vehicleService.getActiveVehicles();
@@ -196,6 +206,12 @@ public ResponseEntity<?> getActiveVehicles() {
         return ResponseEntity.ok(Collections.emptyMap());
     }
     return ResponseEntity.ok(activeVehicles);
+}
+//getting active vehicle numbers for marking exit
+@GetMapping("/active-vehicles")
+public ResponseEntity<List<String>> getActiveVehiclesNumbers() {
+    List<String> activeVehicleNumbers = vehicleService.getActiveVehiclesNumbers();
+    return ResponseEntity.ok(activeVehicleNumbers);
 }
 }
 
