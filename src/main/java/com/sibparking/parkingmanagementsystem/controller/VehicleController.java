@@ -213,6 +213,11 @@ public ResponseEntity<List<String>> getActiveVehiclesNumbers() {
     List<String> activeVehicleNumbers = vehicleService.getActiveVehiclesNumbers();
     return ResponseEntity.ok(activeVehicleNumbers);
 }
+//getting all unique vehicle numbers for dropdown
+@GetMapping("/numbers")
+    public List<String> getAllUniqueVehicleNumbers() {
+        return vehicleService.getUniqueVehicleNumbers();
+    }
 }
 
 

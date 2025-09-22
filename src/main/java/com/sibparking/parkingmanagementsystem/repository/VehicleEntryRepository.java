@@ -23,6 +23,8 @@ public interface VehicleEntryRepository extends MongoRepository<VehicleEntry, St
        "   OR (v.entryDate <= :startDate AND (v.exitDate IS NULL OR v.exitDate >= :endDate))")
 List<VehicleEntry> findVehiclesWithinDateRange(@Param("startDate") Date startDate,
                                                @Param("endDate") Date endDate);
+    @Query(value = "{}", fields = "{ 'vehicleNumber' : 1 }")                                           
+    List<VehicleEntry> findAllVehicleNumbers();
 
 }
 

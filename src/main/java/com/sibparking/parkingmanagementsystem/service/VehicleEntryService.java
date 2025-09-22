@@ -10,6 +10,7 @@ import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.text.ParseException;
 import java.util.Calendar;
@@ -274,9 +275,13 @@ public VehicleEntry addVehicle(VehicleEntry vehicleEntry) {
 
     return vehicleRepository.save(vehicleEntry);
 }
+
+// Get all active vehicles in descending order of entry
 public List<VehicleEntry> getActiveVehicles() {
     return vehicleRepository.findByActiveTrue(Sort.by(Sort.Direction.DESC, "_id"));
 }
+
+
 //getting active vehicle numbers for marking exit
 public List<String> getActiveVehiclesNumbers() {
     // Fetch active vehicles
@@ -286,4 +291,13 @@ public List<String> getActiveVehiclesNumbers() {
             .map(VehicleEntry::getVehicleNumber)
             .toList();
 }
+//getting unique vehicle numbers for dropdown
+public List<String> getUniqueVehicleNumbers() {
+        List<VehicleEntry> vehicles = vehicleRepository.findAllVehicleNumbers();
+        return vehicles.stream()
+            .sorted((v1, v2) -> v2.getId().compareTo(v1.getId())) // latest first
+            .map(VehicleEntry::getVehicleNumber)
+            .distinct() // keep only first occurrence (latest one)
+            .collect(Collectors.toList());
+    }
 }
