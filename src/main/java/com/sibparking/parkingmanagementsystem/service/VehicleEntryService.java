@@ -282,7 +282,7 @@ public List<VehicleEntry> getActiveVehicles() {
 }
 
 
-//getting active vehicle numbers for marking exit
+//getting active vehicle numbers for marking exitt
 public List<String> getActiveVehiclesNumbers() {
     // Fetch active vehicles
     List<VehicleEntry> activeVehicles = vehicleRepository.findByActiveTrue(Sort.by(Sort.Direction.DESC, "_id"));
