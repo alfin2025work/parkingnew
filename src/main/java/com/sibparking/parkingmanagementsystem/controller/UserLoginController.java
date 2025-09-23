@@ -19,28 +19,28 @@ public class UserLoginController {
 
     // Login
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            String token = userService.loginUser(username, password);
-            if (token != null) {
-                response.put("status", "success");
-                response.put("token", token);
-                return ResponseEntity.ok(response);
-            } else {
-                response.put("status", "Invalid username or password");
-                return ResponseEntity.status(401).body(response);
-            }
-        } catch (RuntimeException e) {
-            response.put("status", e.getMessage());
-            return ResponseEntity.status(403).body(response);
-        }
+public ResponseEntity<?> login(@RequestParam String username,
+                               @RequestParam String password,
+                               @RequestParam String deviceId,
+                               @RequestParam(required = false, defaultValue = "false") boolean force) {
+    Map<String, Object> response = new HashMap<>();
+    try {
+        String token = userService.loginUser(username, password, deviceId,force);
+        response.put("status", "success");
+        response.put("token", token);
+        return ResponseEntity.ok(response);
+    } catch (RuntimeException e) {
+        response.put("status", e.getMessage());
+        return ResponseEntity.status(403).body(response);
     }
+}
 
     // Logout
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestHeader("Authorization") String token) {
+         if (token.startsWith("Bearer ")) {
+        token = token.substring(7); // remove "Bearer "
+    }
         userService.logout(token);
         return ResponseEntity.ok("Logged out successfully.");
     }
@@ -48,10 +48,14 @@ public class UserLoginController {
     // Validate session
     @GetMapping("/validate")
     public ResponseEntity<?> validate(@RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+        token = token.substring(7);
+    }
         boolean valid = userService.validateSession(token);
         return ResponseEntity.ok(valid ? "Session valid" : "Session expired or invalid");
     }
 
 }
+
 
 

@@ -14,6 +14,8 @@ public class UserSession {
     private Date loginTime;
     private Date expiryTime;   // ⏳ session expiry
     private boolean active;
+    private String deviceId;
+    private String sessionId;
 
     // getters and setters
     public String getId() { return id; }
@@ -33,4 +35,10 @@ public class UserSession {
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
+
+    public String getSessionId() { return sessionId; }
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
 }
