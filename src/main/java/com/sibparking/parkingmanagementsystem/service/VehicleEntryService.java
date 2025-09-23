@@ -198,10 +198,10 @@ public VehicleEntry updateVehicle(VehicleEntry vehicle) {
 
     public List<VehicleEntry> getVehiclesByDateAndTime(Date startDate, Date endDate,
                                                    String startTime, String endTime) {
-    // 1️⃣ Fetch by date range directly from DB (avoid pulling all records)
+    //  Fetch by date range directly from DB (avoid pulling all records)
     List<VehicleEntry> vehicles = vehicleRepository.findByEntryDateBetween(startDate, endDate);
 
-    // 2️⃣ If time filters are provided, apply them
+    //  If time filters are provided, apply them
     if (startTime != null && endTime != null && !startTime.isEmpty() && !endTime.isEmpty()) {
         try {
             SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a"); // handles "03:35 pm"
@@ -237,7 +237,8 @@ public VehicleEntry updateVehicle(VehicleEntry vehicle) {
             // Invalid time format → ignore time filtering
         }
     }
-
+// sort by createdAt or id (descending)
+    vehicles.sort((v1, v2) -> v2.getId().compareTo(v1.getId()));
     return vehicles;
 }
 

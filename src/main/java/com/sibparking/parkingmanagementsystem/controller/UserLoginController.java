@@ -17,21 +17,41 @@ public class UserLoginController {
     private UserLoginService userService;
 
 
-    // Login existing user
+    // Login
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UserLogin user) {
-        boolean isValid = userService.validateUser(user.getUsername(), user.getPassword());
-
+    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
         Map<String, Object> response = new HashMap<>();
 
-        if (isValid) {
-            response.put("status", "success");
-            return ResponseEntity.ok(response);
-        } else {
-            response.put("status", "Invalid username or password");
-            return ResponseEntity.status(401).body(response);
+        try {
+            String token = userService.loginUser(username, password);
+            if (token != null) {
+                response.put("status", "success");
+                response.put("token", token);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("status", "Invalid username or password");
+                return ResponseEntity.status(401).body(response);
+            }
+        } catch (RuntimeException e) {
+            response.put("status", e.getMessage());
+            return ResponseEntity.status(403).body(response);
         }
     }
+
+    // Logout
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String token) {
+        userService.logout(token);
+        return ResponseEntity.ok("Logged out successfully.");
+    }
+
+    // Validate session
+    @GetMapping("/validate")
+    public ResponseEntity<?> validate(@RequestHeader("Authorization") String token) {
+        boolean valid = userService.validateSession(token);
+        return ResponseEntity.ok(valid ? "Session valid" : "Session expired or invalid");
+    }
+
 }
 
 
