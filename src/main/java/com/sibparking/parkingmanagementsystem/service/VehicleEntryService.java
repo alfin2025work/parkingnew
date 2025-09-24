@@ -198,46 +198,58 @@ public VehicleEntry updateVehicle(VehicleEntry vehicle) {
 
     public List<VehicleEntry> getVehiclesByDateAndTime(Date startDate, Date endDate,
                                                    String startTime, String endTime) {
-    //  Fetch by date range directly from DB (avoid pulling all records)
+    // Fetch by date range directly from DB
     List<VehicleEntry> vehicles = vehicleRepository.findByEntryDateBetween(startDate, endDate);
 
-    //  If time filters are provided, apply them
-    if (startTime != null && endTime != null && !startTime.isEmpty() && !endTime.isEmpty()) {
+    // Apply precise date+time filtering if time is provided
+    if ((startTime != null && !startTime.isEmpty()) || (endTime != null && !endTime.isEmpty())) {
         try {
-            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a"); // handles "03:35 pm"
-            Date filterStart = timeFormat.parse(startTime);
-            Date filterEnd = timeFormat.parse(endTime);
+            SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm a");
+
+            String startTimeStr = (startTime != null && !startTime.isEmpty()) ? startTime : "12:00 AM";
+            String endTimeStr = (endTime != null && !endTime.isEmpty()) ? endTime : "11:59 PM";
+
+            Date filterStart = dateTimeFormat.parse(
+                    new SimpleDateFormat("yyyy-MM-dd").format(startDate) + " " + startTimeStr
+            );
+
+            Date filterEnd = dateTimeFormat.parse(
+                    new SimpleDateFormat("yyyy-MM-dd").format(endDate) + " " + endTimeStr
+            );
 
             vehicles = vehicles.stream()
                     .filter(vehicle -> {
                         try {
-                            // Parse vehicle times
-                            Date entryT = (vehicle.getEntryTime() != null)
-                                    ? timeFormat.parse(vehicle.getEntryTime())
-                                    : null;
-                            Date exitT = (vehicle.getExitTime() != null)
-                                    ? timeFormat.parse(vehicle.getExitTime())
-                                    : null;
+                            Date vehicleEntry = dateTimeFormat.parse(
+                                    new SimpleDateFormat("yyyy-MM-dd").format(vehicle.getEntryDate()) + " " + vehicle.getEntryTime()
+                            );
 
-                            if (entryT != null && exitT == null) {
-                                // Still active → valid if entered within the window
-                                return !entryT.before(filterStart) && !entryT.after(filterEnd);
+                            Date vehicleExit = null;
+                            if (vehicle.getExitDate() != null && vehicle.getExitTime() != null) {
+                                vehicleExit = dateTimeFormat.parse(
+                                        new SimpleDateFormat("yyyy-MM-dd").format(vehicle.getExitDate()) + " " + vehicle.getExitTime()
+                                );
                             }
-                            if (entryT != null && exitT != null) {
-                                // Overlap check: (entry ≤ filterEnd && exit ≥ filterStart)
-                                return !entryT.after(filterEnd) && !exitT.before(filterStart);
+
+                            if (vehicleExit == null) {
+                                return !vehicleEntry.before(filterStart) && !vehicleEntry.after(filterEnd);
                             }
+
+                            // Check overlap
+                            return !vehicleEntry.after(filterEnd) && !vehicleExit.before(filterStart);
+
                         } catch (ParseException e) {
-                            return false; // skip invalid times
+                            return false;
                         }
-                        return true;
                     })
-                    .toList();
+                    .collect(Collectors.toList());
+
         } catch (ParseException e) {
-            // Invalid time format → ignore time filtering
+            // invalid time format → ignore
         }
     }
-// sort by createdAt or id (descending)
+
+    // Sort by createdAt / id descending
     vehicles.sort((v1, v2) -> v2.getId().compareTo(v1.getId()));
     return vehicles;
 }
