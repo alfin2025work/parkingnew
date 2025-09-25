@@ -41,8 +41,12 @@ public ResponseEntity<?> login(@RequestParam String username,
          if (token.startsWith("Bearer ")) {
         token = token.substring(7); // remove "Bearer "
     }
-        userService.logout(token);
-        return ResponseEntity.ok("Logged out successfully.");
+    userService.logout(token); // <-- actually deactivate the session
+        Map<String, Object> response = new HashMap<>();
+    response.put("status", "success");
+    response.put("message", "Logged out successfully.");
+
+    return ResponseEntity.ok(response);
     }
 
     // Validate session
@@ -51,9 +55,18 @@ public ResponseEntity<?> login(@RequestParam String username,
         if (token.startsWith("Bearer ")) {
         token = token.substring(7);
     }
-        boolean valid = userService.validateSession(token);
-        return ResponseEntity.ok(valid ? "Session valid" : "Session expired or invalid");
+    boolean valid = userService.validateSession(token);
+        Map<String, Object> response = new HashMap<>();
+    if (valid) {
+        response.put("status", "success");
+        response.put("message", "Session is valid");
+    } else {
+        response.put("status", "failed");
+        response.put("message", "Session expired or invalid");
     }
+
+    return ResponseEntity.ok(response);
+}
 
 }
 

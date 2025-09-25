@@ -26,33 +26,37 @@ public UserLogin addUser(UserLogin user) {
     return userRepository.save(user);
 }
     // Validate user + create session
-    public String loginUser(String username, String password, String deviceId,boolean force) {
+    public String loginUser(String username, String password, String deviceId, boolean force) {
     UserLogin user = userRepository.findByUsername(username);
 
-    if (user != null && user.getPassword().equals(password)) {
-        // check if user already has an active session
-        Optional<UserSession> existing = sessionRepository.findByUsernameAndActiveTrue(username);
+    if (user == null) {
+        throw new RuntimeException("User not registered.");
+    }
 
-        if (existing.isPresent()) {
-            UserSession session = existing.get();
+    if (!user.getPassword().equals(password)) {
+        throw new RuntimeException("Invalid password.");
+    }
 
-            if (!session.getDeviceId().equals(deviceId) && session.getExpiryTime().after(new Date())) {
-                if (!force) {
-                    // Another device is logged in → block
-                    throw new RuntimeException("User already logged in on another device. Use force-login to override.");
-                } else {
-                    // Force-login → deactivate previous session
-                    session.setActive(false);
-                    sessionRepository.save(session);
-                }
-            } else if (session.getDeviceId().equals(deviceId)) {
-                // Same device, token lost → deactivate old session
+    // check existing session and force login logic...
+    Optional<UserSession> existing = sessionRepository.findByUsernameAndActiveTrue(username);
+
+    if (existing.isPresent()) {
+        UserSession session = existing.get();
+
+        if (!session.getDeviceId().equals(deviceId) && session.getExpiryTime().after(new Date())) {
+            if (!force) {
+                throw new RuntimeException("User already logged in on another device.");
+            } else {
+                // deactivate old session
                 session.setActive(false);
                 sessionRepository.save(session);
             }
-
-            
+        } else if (session.getDeviceId().equals(deviceId)) {
+            // same device, token lost → deactivate old session
+            session.setActive(false);
+            sessionRepository.save(session);
         }
+    }
 
         // create new session
         UserSession session = new UserSession();
@@ -65,9 +69,9 @@ public UserLogin addUser(UserLogin user) {
         sessionRepository.save(session);
 
         return session.getToken();
-    }
-    return null;
+
 }
+
 
     // Validate session
     public boolean validateSession(String token) {
@@ -88,10 +92,15 @@ public UserLogin addUser(UserLogin user) {
 
     // Logout
     public void logout(String token) {
-        sessionRepository.findByTokenAndActiveTrue(token).ifPresent(session -> {
-            session.setActive(false);
-            sessionRepository.save(session);
-        });
+        Optional<UserSession> sessionOpt = sessionRepository.findByToken(token); // remove active filter
+    if (sessionOpt.isPresent()) {
+        UserSession session = sessionOpt.get();
+        session.setActive(false); // deactivate
+        session.setExpiryTime(new Date()); // mark expired
+        sessionRepository.save(session);
     }
 }
+}
+
+    
 

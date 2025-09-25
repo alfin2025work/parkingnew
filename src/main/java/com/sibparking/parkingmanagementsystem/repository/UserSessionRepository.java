@@ -10,5 +10,5 @@ public interface UserSessionRepository extends MongoRepository<UserSession, Stri
     Optional<UserSession> findByTokenAndActiveTrue(String token);
 Optional<UserSession> findByUsernameAndDeviceIdAndActiveTrue(String username, String deviceId);
 Optional<UserSession> findBySessionIdAndActiveTrue(String sessionId);
-
+Optional<UserSession> findByToken(String token);
 }
